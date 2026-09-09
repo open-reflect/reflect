@@ -9,6 +9,25 @@ makes is a `GROUP BY`, never a guess.
 Built for [Claude Code](https://claude.com/claude-code). Runs on [bun](https://bun.sh) with zero
 runtime dependencies (`bun:sqlite`, `Bun.spawn`). macOS, Linux and Windows.
 
+## How it works
+
+![How reflect works](docs/architecture.svg)
+
+Two loops share one database.
+
+**Every turn.** When a Claude Code turn ends, the Stop hook reads only the bytes appended to that
+session's transcript since the last run, masks secrets, and inserts the rows into SQLite.
+`reflect stats` and the TUI read the same tables; the hook itself computes nothing.
+
+**Once a week.** `reflect weekly` runs twelve SQL miners over the last 30 days. Each miner that
+finds something gets one proposal file in `~/.claude-reflect/proposals/`, written by a single model
+call from the aggregated numbers. Ten of them are for you to read in `reflect queue`. Two produce
+prose that could change the agent's prompt (`CLAUDE.md` drift, correction clusters), so they go
+through the judge: three drafts, three refutation votes each, unanimous or nothing. What survives is
+appended to `learned-rules.md` or a project memory file after a rollback copy is taken. Your
+`~/.claude/CLAUDE.md` imports that file with `@`, so the next session starts with the rule in its
+prompt — that is the arrow back.
+
 ## What it records
 
 One source: `~/.claude/projects/**/*.jsonl`. Ingestion is incremental (a byte-offset watermark per
@@ -24,7 +43,10 @@ file) and idempotent (natural-key `INSERT OR IGNORE`), so re-running never dupli
 | `corrections` | a correction candidate | matched keyword, first 300 chars |
 | `io_refs` (view) | a reference | file, URL, skill, MCP resource, memory file |
 
-`io_refs` is a view over `tool_calls.input_json`, not a table — the same fact is never stored twice.
+`io_refs` is a view over `tool_calls.input_json` plus `path_refs` (memory files named in Bash
+commands), not a table — the same fact is never stored twice. `memory_snapshot`/`memory_changes`
+record memory files created, modified or deleted between Stop hooks, since a write through a shell
+variable leaves no path in the transcript.
 
 ⚠️ **Approvals cannot be counted.** An approved permission prompt leaves no trace in the
 transcript. `permission_events` measures friction only: what was blocked, and by whom.
@@ -127,14 +149,20 @@ re-running never registers a hook twice.
 
 Hooks always exit 0. Recording must never block a session.
 
-One step left — schedule `reflect weekly`:
+Two steps left.
 
-```
-# macOS/Linux — cron (the wrapper sets PATH and USER, which cron lacks)
-0 9 * * 1 $HOME/.claude/tools/reflect/reflect_weekly.sh >> $HOME/.claude/tools/reflect/weekly.log 2>&1
-# Windows — Task Scheduler, weekly
-bun C:\Users\<you>\.claude\tools\reflect\src\cli.ts weekly
-```
+1. Import the rules file from your `~/.claude/CLAUDE.md` — without this line, judged rules never
+   reach a session:
+   ```
+   @~/.claude-reflect/learned-rules.md
+   ```
+2. Schedule `reflect weekly`:
+   ```
+   # macOS/Linux — cron (the wrapper sets PATH and USER, which cron lacks)
+   0 9 * * 1 $HOME/.claude/tools/reflect/reflect_weekly.sh >> $HOME/.claude/tools/reflect/weekly.log 2>&1
+   # Windows — Task Scheduler, weekly
+   bun C:\Users\<you>\.claude\tools\reflect\src\cli.ts weekly
+   ```
 
 A Claude Code skill (`~/.claude/skills/reflect/`) is installed too, so you can ask in words —
 "where are my tokens going", "switch the provider to codex" — and the agent runs the right command.
@@ -156,7 +184,8 @@ A Claude Code skill (`~/.claude/skills/reflect/`) is installed too, so you can a
 ## Limits
 
 - `tool_calls.input_json` is capped at 4,000 characters; truncated rows drop out of `io_refs`.
-- Paths inside Bash command strings are not extracted.
+- Paths inside Bash command strings are not extracted, except memory files
+  (`~/.claude/projects/*/memory/*.md`).
 - The sequence miner counts repeats within a single session and skips pairs of core local tools
   (`Bash`, `Read`, `Write`, `Edit`…) — that is the rhythm of coding, not something to automate.
 - Hook command strings are stored up to 200 characters; `hook_name` carries the identity.

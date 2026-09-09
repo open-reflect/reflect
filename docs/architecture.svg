@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="reflect-arch-title reflect-arch-desc">
+  <title id="reflect-arch-title">How reflect works</title>
+  <desc id="reflect-arch-desc">Data flow of reflect: every turn a Stop hook ingests the Claude Code transcript into a local SQLite database that feeds the stats commands; once a week twelve SQL miners read that database, two qualitative proposals pass a three-draft three-vote judge run on a headless claude or codex CLI, surviving drafts are appended to learned-rules.md with a rollback copy, and CLAUDE.md imports that file so the next session starts with the rules.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+    <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#d55e00"/></marker>
+    <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0072b2"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+  <!-- zones -->
+  <rect x="120" y="88" width="1040" height="184" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+  <rect x="136" y="92" width="200" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="236" y="101" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.14em">EVERY TURN · CLAUDE CODE HOOKS</text>
+  <rect x="120" y="392" width="1040" height="184" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+  <rect x="136" y="396" width="184" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="228" y="405" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.14em">ONCE A WEEK · REFLECT WEEKLY</text>
+
+  <!-- arrows -->
+  <line x1="348" y1="176" x2="420" y2="176" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <rect x="352" y="156" width="64" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="384" y="165" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.06em">*.JSONL</text>
+  <line x1="604" y1="176" x2="676" y2="176" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <rect x="608" y="156" width="64" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="640" y="165" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.06em">INSERT</text>
+  <line x1="860" y1="176" x2="932" y2="176" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <rect x="864" y="156" width="64" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="896" y="165" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.06em">GROUP BY</text>
+  <path d="M 768,208 V 400 Q 768,408 760,408 H 288 Q 280,408 280,416 V 448" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <rect x="780" y="300" width="80" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="784" y="309" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="start" letter-spacing="0.06em">LAST 30 DAYS</text>
+  <line x1="348" y1="480" x2="420" y2="480" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <rect x="352" y="460" width="64" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="384" y="469" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.06em">2 OF 12</text>
+  <line x1="604" y1="480" x2="676" y2="480" stroke="#d55e00" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+  <rect x="608" y="460" width="64" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="640" y="469" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.06em">UNANIMOUS</text>
+  <line x1="860" y1="480" x2="932" y2="480" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <rect x="864" y="460" width="64" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="896" y="469" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.06em">APPEND</text>
+  <path d="M 1024,448 V 328 Q 1024,320 1016,320 H 776 a 8,8 0 0,0 -16,0 H 240 Q 232,320 232,312 V 208" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+  <rect x="420" y="300" width="200" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="520" y="309" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.06em">IMPORTED BY CLAUDE.MD</text>
+
+  <!-- nodes -->
+  <rect x="164" y="144" width="184" height="64" rx="6" fill="#f5f5f5"/>
+  <rect x="164" y="144" width="184" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+  <rect x="172" y="152" width="38" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.50)" stroke-width="0.8"/>
+  <text x="191" y="161" fill="#7a8399" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.08em">AGENT</text>
+  <text x="256" y="180" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle">Claude Code session</text>
+  <text x="256" y="196" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle">~/.claude/projects/**</text>
+  <rect x="420" y="144" width="184" height="64" rx="6" fill="#f5f5f5"/>
+  <rect x="420" y="144" width="184" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="428" y="152" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+  <text x="444" y="161" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.08em">HOOK</text>
+  <text x="512" y="180" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle">Stop hook · ingest</text>
+  <text x="512" y="196" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle">byte cursor · secret scrub</text>
+  <rect x="676" y="144" width="184" height="64" rx="6" fill="#f5f5f5"/>
+  <rect x="676" y="144" width="184" height="64" rx="6" fill="rgba(213,94,0,0.08)" stroke="#d55e00" stroke-width="1"/>
+  <rect x="684" y="152" width="38" height="12" rx="2" fill="transparent" stroke="rgba(213,94,0,0.50)" stroke-width="0.8"/>
+  <text x="703" y="161" fill="#d55e00" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+  <text x="768" y="180" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle">SQLite</text>
+  <text x="768" y="196" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle">~/.claude-reflect/reflect.db</text>
+  <rect x="932" y="144" width="184" height="64" rx="6" fill="#f5f5f5"/>
+  <rect x="932" y="144" width="184" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="940" y="152" width="26" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+  <text x="953" y="161" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.08em">CLI</text>
+  <text x="1024" y="180" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle">reflect stats · TUI</text>
+  <text x="1024" y="196" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle">tokens · mcp · io · hooks</text>
+  <rect x="164" y="448" width="184" height="64" rx="6" fill="#f5f5f5"/>
+  <rect x="164" y="448" width="184" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="172" y="456" width="26" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+  <text x="185" y="465" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.08em">SQL</text>
+  <text x="256" y="484" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle">12 miners → proposals</text>
+  <text x="256" y="500" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle">plain GROUP BY · reflect queue</text>
+  <rect x="420" y="448" width="184" height="64" rx="6" fill="#f5f5f5"/>
+  <rect x="420" y="448" width="184" height="64" rx="6" fill="rgba(213,94,0,0.08)" stroke="#d55e00" stroke-width="1"/>
+  <rect x="428" y="456" width="38" height="12" rx="2" fill="transparent" stroke="rgba(213,94,0,0.50)" stroke-width="0.8"/>
+  <text x="447" y="465" fill="#d55e00" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.08em">MODEL</text>
+  <text x="512" y="484" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle">Judge · 3 drafts × 3 votes</text>
+  <text x="512" y="500" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle">headless claude or codex</text>
+  <rect x="676" y="448" width="184" height="64" rx="6" fill="#f5f5f5"/>
+  <rect x="676" y="448" width="184" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="684" y="456" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+  <text x="700" y="465" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.08em">STEP</text>
+  <text x="768" y="484" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle">Apply · append-only</text>
+  <text x="768" y="500" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle">rollback/ · .apply.md review</text>
+  <rect x="932" y="448" width="184" height="64" rx="6" fill="#f5f5f5"/>
+  <rect x="932" y="448" width="184" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+  <rect x="940" y="456" width="38" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.50)" stroke-width="0.8"/>
+  <text x="959" y="465" fill="#4f5d75" font-size="7" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+  <text x="1024" y="484" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif" text-anchor="middle">learned-rules.md</text>
+  <text x="1024" y="500" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, Menlo, monospace" text-anchor="middle">+ project memory (memory-sync)</text>
+
+  <!-- legend -->
+  <line x1="120" y1="616" x2="1160" y2="616" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+  <text x="120" y="632" fill="#4f5d75" font-size="8" font-family="'Geist Mono', ui-monospace, Menlo, monospace" letter-spacing="0.18em">LEGEND</text>
+  <rect x="120" y="648" width="14" height="10" rx="2" fill="rgba(213,94,0,0.08)" stroke="#d55e00" stroke-width="1"/>
+  <text x="140" y="656" fill="#4f5d75" font-size="8" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif">Focal</text>
+  <rect x="220" y="648" width="14" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <text x="240" y="656" fill="#4f5d75" font-size="8" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif">Step</text>
+  <rect x="320" y="648" width="14" height="10" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+  <text x="340" y="656" fill="#4f5d75" font-size="8" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif">Store</text>
+  <rect x="420" y="648" width="14" height="10" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+  <text x="440" y="656" fill="#4f5d75" font-size="8" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif">Agent (input)</text>
+  <line x1="560" y1="652" x2="588" y2="652" stroke="#d55e00" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+  <text x="596" y="656" fill="#4f5d75" font-size="8" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif">Only survivors pass</text>
+  <line x1="740" y1="652" x2="768" y2="652" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+  <text x="776" y="656" fill="#4f5d75" font-size="8" font-family="'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif">Feeds the next session</text>
+</svg>
