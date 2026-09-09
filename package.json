@@ -1,0 +1,24 @@
+{
+  "name": "reflect",
+  "version": "0.1.0",
+  "description": "Records what your coding agent actually did — tool calls, tokens, hooks, MCP — into SQLite, and turns the aggregates into improvement proposals.",
+  "type": "module",
+  "bin": {
+    "reflect": "./src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun src/cli.ts",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/open-reflect/reflect.git"
+  },
+  "homepage": "https://github.com/open-reflect/reflect"
+}

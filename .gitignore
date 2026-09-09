@@ -1,0 +1,6 @@
+node_modules/
+# Data never enters the repo — it all lives in ~/.claude-reflect/
+*.db
+*.db-shm
+*.db-wal
+config.json
