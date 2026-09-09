@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 162" width="160" height="162" role="img" aria-labelledby="reflect-logo-title">
+  <title id="reflect-logo-title">reflect</title>
+  <circle cx="80" cy="119" r="35" fill="#2d3142"/>
+  <circle cx="80" cy="46" r="38" fill="#ffffff" stroke="#2d3142" stroke-width="5"/>
+</svg>

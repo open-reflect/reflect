@@ -1,5 +1,10 @@
 *[English](README.md) · 한국어*
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+  <img alt="" src="docs/logo.svg" width="88">
+</picture>
+
 # reflect
 
 reflect 는 코딩 에이전트가 **실제로 무엇을 했는지**를 트랜스크립트에서 읽어 SQLite 에 넣고, 주 1회 그

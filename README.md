@@ -1,5 +1,10 @@
 *English · [한국어](README.ko.md)*
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+  <img alt="" src="docs/logo.svg" width="88">
+</picture>
+
 # reflect
 
 reflect reads what your coding agent **actually did** out of its own transcripts, loads it into
