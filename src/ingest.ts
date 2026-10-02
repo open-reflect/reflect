@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { HOOK_COMMAND_CAP, scrub } from "./scrub.ts";
 import { PROJECTS_ROOT } from "./paths.ts";
 import { codexParser, codexSessionRoots, isCodexRollout } from "./codex-ingest.ts";
+import { isPiSession, piParser, piSessionRoots } from "./pi-ingest.ts";
 
 const HOOK_ATTACHMENT_TYPES = new Set([
   "hook_success",
@@ -184,7 +185,9 @@ export function ingestFile(db: Database, path: string): number {
   try {
     const buffer = Buffer.allocUnsafe(stat.size - offset);
     const read = readSync(handle, buffer, 0, buffer.length, offset);
-    const parse = isCodexRollout(path) ? codexParser(path) : (line: Record<string, any>) => parseLine(line, path);
+    const parse = isCodexRollout(path) ? codexParser(path)
+      : isPiSession(path) ? piParser(path)
+      : (line: Record<string, any>) => parseLine(line, path);
     return ingestBuffer(db, path, offset, stat.size, stat.ino, buffer.subarray(0, read), parse);
   } finally {
     closeSync(handle);
@@ -196,8 +199,9 @@ function ingestBuffer(db: Database, path: string, offset: number, size: number,
                       parse: (line: Record<string, any>) => Insert[]): number {
   const text = bytes.toString("utf8");
   const lines = text.split("\n");
-  // A trailing fragment without newline is still being written; leave it for the next run.
-  const complete = text.endsWith("\n") ? lines.length : lines.length - 1;
+  // The last piece is "" after a final newline, or a line still being written. Counting the ""
+  // moved the watermark one byte past EOF, so the next run lost the first appended line.
+  const complete = lines.length - 1;
   let consumed = 0;
   let parsed = 0;
   const errors: [string, number][] = [];
@@ -258,10 +262,10 @@ function* walk(root: string): Generator<string> {
 export function collect(db: Database, root: string = PROJECTS_ROOT): number {
   let total = 0;
   for (const path of walk(root)) total += ingestFile(db, path);
-  // Tests pass their own root; only the real run also reads Codex sessions.
+  // Tests pass their own root; only the real run also reads Codex, pi and omp sessions.
   if (root === PROJECTS_ROOT) {
-    for (const codexRoot of codexSessionRoots()) {
-      for (const path of walk(codexRoot)) total += ingestFile(db, path);
+    for (const agentRoot of [...codexSessionRoots(), ...piSessionRoots()]) {
+      for (const path of walk(agentRoot)) total += ingestFile(db, path);
     }
   }
   return total;
