@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 import { HOOK_COMMAND_CAP, scrub } from "./scrub.ts";
 import { PROJECTS_ROOT } from "./paths.ts";
+import { codexParser, codexSessionRoots, isCodexRollout } from "./codex-ingest.ts";
 
 const HOOK_ATTACHMENT_TYPES = new Set([
   "hook_success",
@@ -15,9 +16,9 @@ const HOOK_ATTACHMENT_TYPES = new Set([
 
 // Keywords that mark a correction. Heuristic; proposals must say false positives are possible.
 // Korean and English correction markers. Add your language here.
-const CORRECTION = /아니야|아니라|틀렸|다시 해|왜 그랬|하지 말|그게 아니|잘못|되돌려|revert|undo|that's wrong|not what i|don't do that|redo|why did you/i;
+export const CORRECTION = /아니야|아니라|틀렸|다시 해|왜 그랬|하지 말|그게 아니|잘못|되돌려|revert|undo|that's wrong|not what i|don't do that|redo|why did you/i;
 
-type Insert = { table: string; values: unknown[] };
+export type Insert = { table: string; values: unknown[] };
 
 // The only path shape pulled out of shell text: <home>/.claude/projects/<slug>/memory/<file>.md.
 // The prefix is kept so the ref matches the absolute paths Read/Write/Edit report; a leading ~ is expanded.
@@ -183,14 +184,16 @@ export function ingestFile(db: Database, path: string): number {
   try {
     const buffer = Buffer.allocUnsafe(stat.size - offset);
     const read = readSync(handle, buffer, 0, buffer.length, offset);
-    return ingestBuffer(db, path, offset, stat.size, stat.ino, buffer.subarray(0, read));
+    const parse = isCodexRollout(path) ? codexParser(path) : (line: Record<string, any>) => parseLine(line, path);
+    return ingestBuffer(db, path, offset, stat.size, stat.ino, buffer.subarray(0, read), parse);
   } finally {
     closeSync(handle);
   }
 }
 
 function ingestBuffer(db: Database, path: string, offset: number, size: number,
-                      inode: number, bytes: Buffer): number {
+                      inode: number, bytes: Buffer,
+                      parse: (line: Record<string, any>) => Insert[]): number {
   const text = bytes.toString("utf8");
   const lines = text.split("\n");
   // A trailing fragment without newline is still being written; leave it for the next run.
@@ -215,7 +218,7 @@ function ingestBuffer(db: Database, path: string, offset: number, size: number,
         continue;
       }
       parsed += 1;
-      for (const insert of parseLine(line, path)) {
+      for (const insert of parse(line)) {
         if (insert.table === "sessions") insertSession.run(...(insert.values as never[]));
         else if (insert.table === "_tool_result") {
           errors.push([insert.values[0] as string, insert.values[1] as number]);
@@ -255,6 +258,12 @@ function* walk(root: string): Generator<string> {
 export function collect(db: Database, root: string = PROJECTS_ROOT): number {
   let total = 0;
   for (const path of walk(root)) total += ingestFile(db, path);
+  // Tests pass their own root; only the real run also reads Codex sessions.
+  if (root === PROJECTS_ROOT) {
+    for (const codexRoot of codexSessionRoots()) {
+      for (const path of walk(codexRoot)) total += ingestFile(db, path);
+    }
+  }
   return total;
 }
 

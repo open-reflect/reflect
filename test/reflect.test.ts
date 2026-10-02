@@ -1,10 +1,11 @@
 /** Behavioral checks; no model is ever called. */
 import { afterEach, expect, mock, test } from "bun:test";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { connect } from "../src/db.ts";
 import { ingestFile, memoryPathsIn, parseLine } from "../src/ingest.ts";
+import { codexSessionRoots } from "../src/codex-ingest.ts";
 import { scanMemoryChanges } from "../src/memory-watch.ts";
 import { scrub } from "../src/scrub.ts";
 import { statHookFriction, statMcp, statTools } from "../src/stats.ts";
@@ -362,4 +363,65 @@ test("memory snapshot records created, modified and deleted files after seeding"
 
   const changes = db.query("SELECT change, path FROM memory_changes ORDER BY ts, path").all() as { change: string; path: string }[];
   expect(changes.map((c) => `${c.change}:${c.path.split("/").pop()}`)).toEqual(["modified:a.md", "created:b.md", "deleted:b.md"]);
+});
+
+test("codex rollout fills the same tables and skips injected context", () => {
+  const directory = join(mkdtempSync(join(tmpdir(), "reflect-codex-")), "sessions");
+  mkdirSync(directory);
+  const session = "01a0dc53-d30f-7e70-a462-e146daf35aa7";
+  const path = join(directory, `rollout-2026-10-02T10-00-00-${session}.jsonl`);
+  const cwd = join(homedir(), "Dev", "proj");
+  const lines = [
+    { timestamp: "2026-10-02T01:00:00Z", type: "session_meta",
+      payload: { id: session, cwd, cli_version: "0.157.1", originator: "codex-tui" } },
+    { timestamp: "2026-10-02T01:00:01Z", type: "turn_context", payload: { cwd, model: "gpt-5.6-terra" } },
+    { timestamp: "2026-10-02T01:00:02Z", type: "response_item",
+      payload: { type: "message", role: "user", content: [{ type: "input_text", text: "# AGENTS.md instructions 아니야" }] } },
+    { timestamp: "2026-10-02T01:00:03Z", type: "response_item",
+      payload: { type: "message", role: "user", content: [{ type: "input_text", text: "그게 아니라 develop 기준이야" }] } },
+    { timestamp: "2026-10-02T01:00:04Z", type: "response_item",
+      payload: { type: "custom_tool_call", id: "ctc_1", call_id: "call_1", name: "exec",
+                 input: `await tools.apply_patch({input:"x"}); cat ${homedir()}/.claude/projects/p/memory/a.md TOKEN=${FAKE_KEY}` } },
+    { timestamp: "2026-10-02T01:00:05Z", type: "response_item",
+      payload: { type: "custom_tool_call_output", id: "ctco_1", call_id: "call_1",
+                 output: [{ type: "input_text", text: "Script failed\n[jira-branch-guard] BLOCKED: branch 'main'" }] } },
+    { timestamp: "2026-10-02T01:00:06Z", type: "event_msg",
+      payload: { type: "token_count", info: { last_token_usage: { input_tokens: 100, cached_input_tokens: 80, output_tokens: 7, reasoning_output_tokens: 3 } } } },
+  ];
+  writeFileSync(path, `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`);
+  const db = connect(":memory:");
+  expect(ingestFile(db, path)).toBe(lines.length);
+  const one = (sql: string) => db.query(sql).get() as Record<string, unknown>;
+
+  expect(one("SELECT session_id, version FROM sessions")).toEqual({ session_id: session, version: "codex-0.157.1" });
+  expect(one("SELECT tool_name, is_error FROM tool_calls")).toEqual({ tool_name: "codex:apply_patch", is_error: 1 });
+  expect(String(one("SELECT input_json FROM tool_calls").input_json)).not.toContain("sk-ant-");
+  expect(one("SELECT COUNT(*) c FROM path_refs").c).toBe(1);
+  expect(one("SELECT COUNT(*) c FROM corrections").c).toBe(1);
+  expect(one("SELECT input_tokens, cache_read, model FROM model_turns"))
+    .toEqual({ input_tokens: 20, cache_read: 80, model: "gpt-5.6-terra" });
+  expect(statHookFriction(db)).toEqual([{ hook: "jira-branch-guard", blocked_tool: "codex:apply_patch", blocks: 1 }]);
+});
+
+test("codex sessions outside work checkouts are not collected", () => {
+  const directory = join(mkdtempSync(join(tmpdir(), "reflect-codex-")), "sessions");
+  mkdirSync(directory);
+  const path = join(directory, "rollout-2026-10-02T10-00-00-01a0dc53-d30f-7e70-a462-e146daf35aa8.jsonl");
+  const line = { timestamp: "2026-10-02T01:00:00Z", type: "session_meta",
+                 payload: { id: "s", cwd: join(homedir(), "Documents", "Codex", "chat"), cli_version: "1" } };
+  writeFileSync(path, `${JSON.stringify(line)}\n`);
+  const db = connect(":memory:");
+  ingestFile(db, path);
+  expect((db.query("SELECT COUNT(*) c FROM sessions").get() as { c: number }).c).toBe(0);
+});
+
+test("codex sessions under a custom CODEX_HOME are collected", () => {
+  const previous = process.env.CODEX_HOME;
+  process.env.CODEX_HOME = "/opt/codex-home";
+  try {
+    expect(codexSessionRoots()).toContain("/opt/codex-home/sessions");
+  } finally {
+    if (previous === undefined) delete process.env.CODEX_HOME;
+    else process.env.CODEX_HOME = previous;
+  }
 });

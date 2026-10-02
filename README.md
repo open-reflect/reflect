@@ -35,7 +35,7 @@ prompt — that is the arrow back.
 
 ## What it records
 
-One source: `~/.claude/projects/**/*.jsonl`. Ingestion is incremental (a byte-offset watermark per
+Two sources: Claude Code transcripts `~/.claude/projects/**/*.jsonl`, and Codex sessions `~/.codex/sessions/**/rollout-*.jsonl` (also under `$CODEX_HOME` and Orca account homes). Codex sessions land in the same tables, read on `collect`/`weekly` (the Stop hook stays Claude-only); their `sessions.version` is `codex-<version>` and tool names are `codex:<tool>`. The Codex desktop chat folder (`~/Documents/Codex`), temp dirs and sessions delegated from Claude through the codex plugin are skipped. Ingestion is incremental (a byte-offset watermark per
 file) and idempotent (natural-key `INSERT OR IGNORE`), so re-running never duplicates a row.
 
 | Table | One row is | Contents |
