@@ -22,15 +22,19 @@ export function isCodexRollout(path: string): boolean {
   return basename(path).startsWith("rollout-") && path.includes("/sessions/");
 }
 
-// Not coding sessions: the desktop app's default chat folder, and temp dirs (reflect's own judge runs).
+// Not coding sessions: the Codex desktop chat folder, and temp dirs (reflect's judge runs, omp's home fallback).
 const NON_WORK_ROOTS = [join(HOME, "Documents", "Codex"), tmpdir(), "/tmp", "/private/tmp", "/var/folders"];
+export function isWorkDir(cwd: string | null): cwd is string {
+  return !!cwd && !NON_WORK_ROOTS.some((root) => cwd === root || cwd.startsWith(`${root}/`));
+}
+
 // Claude handing a task to Codex (codex plugin): the "user" turns are Claude's prompts, not corrections.
 const SKIPPED_ORIGINATORS = new Set(["Claude Code"]);
 
 const SESSION_ID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 const FAILED = /"exit_code":\s*[1-9]|Script (?:failed|error)/;
 // Guard hooks that block print "[<name>-guard] BLOCKED" on stderr; Codex hands that text back as the tool output.
-const GUARD_BLOCK = /\[([\w-]+-guard)\] BLOCKED/;
+export const GUARD_BLOCK = /\[([\w-]+-guard)\] BLOCKED/;
 const INNER_TOOL = /tools\.(\w+)\(/;
 
 type CodexState = {
@@ -67,7 +71,7 @@ function userText(content: unknown): string {
 }
 
 /** AGENTS.md, environment context and file mentions arrive as user messages too. */
-function looksTyped(text: string): boolean {
+export function looksTyped(text: string): boolean {
   const trimmed = text.trim();
   if (!trimmed || trimmed.length > 2000) return false;
   return !trimmed.startsWith("<") && !trimmed.startsWith("#");
@@ -94,7 +98,7 @@ export function parseCodexLine(line: Record<string, any>, state: CodexState, fil
   }
   if (state.skipped) return [];
   const cwd = state.cwd;
-  if (!cwd || NON_WORK_ROOTS.some((root) => cwd === root || cwd.startsWith(`${root}/`))) return [];
+  if (!isWorkDir(cwd)) return [];
 
   const session = state.session;
   const sessionRow: Insert = {
