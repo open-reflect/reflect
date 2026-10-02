@@ -1,6 +1,6 @@
 {
   "name": "reflect",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Records what your coding agent actually did — tool calls, tokens, hooks, MCP — into SQLite, and turns the aggregates into improvement proposals.",
   "type": "module",
   "bin": {
