@@ -196,8 +196,9 @@ function ingestBuffer(db: Database, path: string, offset: number, size: number,
                       parse: (line: Record<string, any>) => Insert[]): number {
   const text = bytes.toString("utf8");
   const lines = text.split("\n");
-  // A trailing fragment without newline is still being written; leave it for the next run.
-  const complete = text.endsWith("\n") ? lines.length : lines.length - 1;
+  // The last piece is "" after a final newline, or a line still being written. Counting the ""
+  // moved the watermark one byte past EOF, so the next run lost the first appended line.
+  const complete = lines.length - 1;
   let consumed = 0;
   let parsed = 0;
   const errors: [string, number][] = [];
