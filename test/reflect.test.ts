@@ -425,3 +425,48 @@ test("codex sessions under a custom CODEX_HOME are collected", () => {
     else process.env.CODEX_HOME = previous;
   }
 });
+
+test("pi/omp sessions fill the same tables, also when read from the middle", () => {
+  const directory = mkdtempSync(join(tmpdir(), "reflect-pi-"));
+  const previous = process.env.PI_CODING_AGENT_SESSION_DIR;
+  process.env.PI_CODING_AGENT_SESSION_DIR = directory;
+  try {
+    const session = "01a08a08-b4b4-76fe-8e1c-5cfd67aea4ae";
+    const path = join(directory, `2026-10-02T01-00-00-000Z_${session}.jsonl`);
+    const cwd = join(homedir(), "Dev", "proj");
+    const head = [
+      { type: "title", v: 1, title: "t" },
+      { type: "session", version: 3, id: session, timestamp: "2026-10-02T01:00:00Z", cwd },
+      { type: "message", id: "a1", timestamp: "2026-10-02T01:00:01Z",
+        message: { role: "user", content: [{ type: "text", text: "<system-reminder> 아니야" }] } },
+    ];
+    const tail = [
+      { type: "message", id: "a2", timestamp: "2026-10-02T01:00:02Z",
+        message: { role: "assistant", model: "gpt-x", usage: { input: 20, output: 7, cacheRead: 80, cacheWrite: 0 },
+                   content: [{ type: "toolCall", id: "call_1", name: "edit", arguments: { path: "/x.kt", token: FAKE_KEY } }] } },
+      { type: "message", id: "a3", timestamp: "2026-10-02T01:00:03Z",
+        message: { role: "toolResult", toolCallId: "call_1", toolName: "edit", isError: true,
+                   content: [{ type: "text", text: "[jira-branch-guard] BLOCKED: branch 'main'" }] } },
+      { type: "message", id: "a4", timestamp: "2026-10-02T01:00:04Z",
+        message: { role: "user", content: [{ type: "text", text: "그게 아니라 develop 기준이야" }] } },
+    ];
+    const db = connect(":memory:");
+    writeFileSync(path, `${head.map((line) => JSON.stringify(line)).join("\n")}\n`);
+    ingestFile(db, path);
+    // The second read starts past the header; cwd must still be known.
+    writeFileSync(path, `${[...head, ...tail].map((line) => JSON.stringify(line)).join("\n")}\n`);
+    ingestFile(db, path);
+    const one = (sql: string) => db.query(sql).get() as Record<string, unknown>;
+
+    expect(one("SELECT session_id, version FROM sessions")).toEqual({ session_id: session, version: "pi-3" });
+    expect(one("SELECT tool_name, is_error FROM tool_calls")).toEqual({ tool_name: "pi:edit", is_error: 1 });
+    expect(String(one("SELECT input_json FROM tool_calls").input_json)).not.toContain("sk-ant-");
+    expect(one("SELECT COUNT(*) c FROM corrections").c).toBe(1);
+    expect(one("SELECT input_tokens, cache_read, model FROM model_turns"))
+      .toEqual({ input_tokens: 20, cache_read: 80, model: "gpt-x" });
+    expect(statHookFriction(db)).toEqual([{ hook: "jira-branch-guard", blocked_tool: "pi:edit", blocks: 1 }]);
+  } finally {
+    if (previous === undefined) delete process.env.PI_CODING_AGENT_SESSION_DIR;
+    else process.env.PI_CODING_AGENT_SESSION_DIR = previous;
+  }
+});

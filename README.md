@@ -35,7 +35,7 @@ prompt — that is the arrow back.
 
 ## What it records
 
-Two sources: Claude Code transcripts `~/.claude/projects/**/*.jsonl`, and Codex sessions `~/.codex/sessions/**/rollout-*.jsonl` (also under `$CODEX_HOME` and Orca account homes). Codex sessions land in the same tables, read on `collect`/`weekly` (the Stop hook stays Claude-only); their `sessions.version` is `codex-<version>` and tool names are `codex:<tool>`. The Codex desktop chat folder (`~/Documents/Codex`), temp dirs and sessions delegated from Claude through the codex plugin are skipped. Ingestion is incremental (a byte-offset watermark per
+Sources: Claude Code transcripts `~/.claude/projects/**/*.jsonl`; Codex sessions `~/.codex/sessions/**/rollout-*.jsonl` (also under `$CODEX_HOME` and Orca account homes); pi and omp (oh-my-pi) sessions under `~/.pi/agent/sessions` and `~/.omp/agent/sessions` (also `$PI_CODING_AGENT_DIR/sessions` and `$PI_CODING_AGENT_SESSION_DIR`). Other agents land in the same tables, read on `collect`/`weekly` (the Stop hook stays Claude-only); `sessions.version` is `codex-<version>`, `pi-<version>` or `omp-<version>`, and tool names carry the same prefix (`codex:exec_command`, `omp:bash`). The Codex desktop chat folder (`~/Documents/Codex`), temp dirs and sessions delegated from Claude through the codex plugin are skipped. Ingestion is incremental (a byte-offset watermark per
 file) and idempotent (natural-key `INSERT OR IGNORE`), so re-running never duplicates a row.
 
 | Table | One row is | Contents |
