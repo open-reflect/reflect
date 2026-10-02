@@ -33,7 +33,7 @@ reflect 는 코딩 에이전트가 **실제로 무엇을 했는지**를 트랜�
 
 ## 무엇을 기록하나
 
-수집원은 `~/.claude/projects/**/*.jsonl` 하나다. 파일마다 바이트 오프셋을 기억해 증분으로 읽고, 자연키
+수집원은 둘이다. Claude Code 트랜스크립트 `~/.claude/projects/**/*.jsonl` 과 Codex 세션 `~/.codex/sessions/**/rollout-*.jsonl`(`$CODEX_HOME`·Orca 계정 홈 포함)이다. Codex 세션은 `collect`·`weekly` 때 같은 테이블에 들어가고(Stop 훅은 Claude 전용), `sessions.version` 이 `codex-<버전>`, 도구 이름이 `codex:<도구>` 다. Codex 데스크톱 대화 폴더(`~/Documents/Codex`)·임시 디렉토리·codex 플러그인으로 위임한 세션은 뺀다. 파일마다 바이트 오프셋을 기억해 증분으로 읽고, 자연키
 `INSERT OR IGNORE` 로 넣기 때문에 다시 돌려도 행이 중복되지 않는다.
 
 | 테이블 | 한 행 = | 담는 것 |
